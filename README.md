@@ -84,23 +84,8 @@ The web interface will be available at `http://localhost:7777`
 
 ## 💻 Usage
 
-### Basic Mission Execution
-
-1. **Open the Web Interface**: Navigate to `http://localhost:7777`
-2. **Enter Mission Description**: Describe what you want the agents to accomplish
-3. **Select Mission Type**: Choose from predefined categories or "general"
-4. **Start Mission**: Click "Start Mission" to begin execution
-5. **Monitor Progress**: Watch real-time updates as agents complete their tasks
-
-### Example Missions
-- "Create a comprehensive market analysis for electric vehicles"
-- "Write a detailed blog post about sustainable energy trends"
-- "Develop a product launch strategy for a new mobile app"
-- "Research and analyze the latest developments in AI technology"
-
 ### Custom Workflow Builder
 
-1. **Access Workflow Builder**: Click "Workflow Builder" in the navigation
 2. **Design Your Workflow**:
    - Drag agents from the palette to the canvas
    - Configure each agent's task and parameters

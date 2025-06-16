@@ -218,13 +218,9 @@ def run_mission_thread(mission_description, mission_type):
     return result
 
 @app.route('/')
-def index():
-    """Main page"""
-    return render_template('workflow_builder.html')
-
 @app.route('/workflow')
-def workflow_builder():
-    """Workflow builder page"""
+def index():
+    """Main page - Workflow builder interface"""
     return render_template('workflow_builder.html')
 
 @app.route('/favicon.ico')
