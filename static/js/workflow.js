@@ -48,7 +48,7 @@ class WorkflowBuilder {
             }
         });
 
-        this.socket.on('project_completed', (result) => {
+        this.socket.on('mission_completed', (result) => {
             console.log('Workflow completed:', result);
             this.showNotification('Workflow completed successfully!', 'success');
             this.handleWorkflowCompleted(result);
@@ -57,7 +57,7 @@ class WorkflowBuilder {
             }
         });
 
-        this.socket.on('project_error', (error) => {
+        this.socket.on('mission_error', (error) => {
             console.error('Workflow error:', error);
             this.showNotification('Workflow execution failed: ' + error.error, 'error');
             this.handleWorkflowError(error);
@@ -1418,10 +1418,10 @@ class WorkflowBuilder {
     }
 
     async runWorkflow() {
-        const projectDescription = document.getElementById('workflow-project-description').value;
+        const missionDescription = document.getElementById('workflow-mission-description').value;
 
-        if (!projectDescription) {
-            this.showNotification('Please enter a project description', 'warning');
+        if (!missionDescription) {
+            this.showNotification('Please enter a mission description', 'warning');
             return;
         }
 
@@ -1435,7 +1435,7 @@ class WorkflowBuilder {
                 },
                 body: JSON.stringify({
                     workflow: workflowData,
-                    description: projectDescription
+                    description: missionDescription
                 })
             });
 
@@ -1444,7 +1444,7 @@ class WorkflowBuilder {
                 this.hideRunModal();
                 
                 // Show execution panel instead of redirecting
-                this.showExecutionPanel(projectDescription, workflowData);
+                this.showExecutionPanel(missionDescription, workflowData);
             } else {
                 const error = await response.json();
                 this.showNotification('Failed to start workflow: ' + error.error, 'error');
@@ -1594,8 +1594,8 @@ class WorkflowBuilder {
     getAgentInfo(agentType) {
         const agentTypes = {
             'manager': {
-                title: 'Project Manager',
-                description: 'Manages project workflow and coordination',
+                title: 'mission Manager',
+                description: 'Manages mission workflow and coordination',
                 icon: 'fas fa-user-tie',
                 color: '#4F46E5' // Indigo
             },
@@ -1847,14 +1847,14 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // Workflow execution management functions
-WorkflowBuilder.prototype.showExecutionPanel = function(projectDescription, workflowData) {
+WorkflowBuilder.prototype.showExecutionPanel = function(missionDescription, workflowData) {
     const executionPanel = document.getElementById('workflow-execution-panel');
-    const projectInfoDiv = document.getElementById('execution-project-info');
+    const missionInfoDiv = document.getElementById('execution-mission-info');
     
-    // Show project information
-    projectInfoDiv.innerHTML = `
-        <h5>Project Description</h5>
-        <p>${projectDescription}</p>
+    // Show mission information
+    missionInfoDiv.innerHTML = `
+        <h5>mission Description</h5>
+        <p>${missionDescription}</p>
         <div style="margin-top: 1rem;">
             <strong>Workflow Nodes:</strong> ${workflowData.nodes.length}<br>
             <strong>Connections:</strong> ${workflowData.connections.length}

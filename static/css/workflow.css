@@ -986,19 +986,19 @@
     gap: 0.5rem;
 }
 
-.project-info {
+.mission-info {
     background: var(--bg-primary);
     padding: 1rem;
     border-radius: 6px;
     border: 1px solid var(--border-color);
 }
 
-.project-info h5 {
+.mission-info h5 {
     margin: 0 0 0.5rem 0;
     color: var(--text-primary);
 }
 
-.project-info p, .project-info div {
+.mission-info p, .mission-info div {
     margin: 0;
     color: var(--text-secondary);
     line-height: 1.5;

@@ -381,7 +381,7 @@ class InfinityBenchApp {
             headerDiv.className = 'agents-header';
             headerDiv.innerHTML = `
                 <div class="workflow-indicator">
-                    <i class="fas fa-project-diagram"></i>
+                    <i class="fas fa-mission-diagram"></i>
                     <span>Custom Workflow Active</span>
                 </div>
             `;
@@ -575,13 +575,13 @@ function downloadResults() {
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
-    // Ctrl+Enter to start project
+    // Ctrl+Enter to start mission
     if (e.ctrlKey && e.key === 'Enter') {
         document.getElementById('start-btn').click();
     }
     
     // Escape to clear form
     if (e.key === 'Escape') {
-        document.getElementById('project-form').reset();
+        document.getElementById('mission-form').reset();
     }
 });

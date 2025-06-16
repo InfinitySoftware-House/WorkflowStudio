@@ -1,7 +1,7 @@
 {
   "id": "business_plan_development",
   "name": "Comprehensive Business Plan Development",
-  "description": "Full workflow for creating a detailed business plan including market analysis, financial projections, and strategic planning",
+  "description": "Full workflow for creating a detailed business plan including market analysis, financial missionions, and strategic planning",
   "workflow": {
     "nodes": [
       {
@@ -54,15 +54,15 @@
       },
       {
         "id": "node_5",
-        "title": "Financial Projections",
+        "title": "Financial missionions",
         "agentType": "custom",
-        "description": "Create detailed financial projections including revenue forecasts, expense budgets, cash flow analysis, and break-even calculations.",
+        "description": "Create detailed financial missionions including revenue forecasts, expense budgets, cash flow analysis, and break-even calculations.",
         "position": {
           "x": 100,
           "y": 500
         },
         "model": null,
-        "customPrompt": "You are a financial analyst and business consultant specializing in startup financial modeling. Create realistic, data-driven financial projections with clear assumptions and scenarios. Focus on practical financial planning and risk assessment."
+        "customPrompt": "You are a financial analyst and business consultant specializing in startup financial modeling. Create realistic, data-driven financial missionions with clear assumptions and scenarios. Focus on practical financial planning and risk assessment."
       },
       {
         "id": "node_6",
@@ -128,7 +128,7 @@
         "id": "node_11",
         "title": "Business Plan Review & Validation",
         "agentType": "reviewer",
-        "description": "Conduct final review of the business plan for completeness, accuracy, and persuasiveness. Validate all assumptions and projections.",
+        "description": "Conduct final review of the business plan for completeness, accuracy, and persuasiveness. Validate all assumptions and missionions.",
         "position": {
           "x": 250,
           "y": 1100

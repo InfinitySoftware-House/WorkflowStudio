@@ -652,7 +652,7 @@ class MultiAgentSystem:
         
         # Manager Agent
         manager_prompt = """
-        You are an expert Manager in project management and team coordination.
+        You are an expert Manager in mission management and team coordination.
         Your responsibilities include:
         - Planning and organizing work
         - Coordinating other agents
@@ -732,16 +732,16 @@ class MultiAgentSystem:
             "reviewer": Agent("Reviewer", AgentRole.REVIEWER, reviewer_prompt, self.log_callback)
         }
     
-    async def assign_task(self, task_description: str, project_type: str = "general") -> Dict[str, Any]:
+    async def assign_task(self, task_description: str, mission_type: str = "general") -> Dict[str, Any]:
         """Assign a complex task to the multi-agent system"""
         
-        print(f"\n🚀 Starting project: {task_description}\n")
+        print(f"\n🚀 Starting mission: {task_description}\n")
         
-        # Phase 1: Manager plans the project
-        print("📋 Phase 1: Project planning")
+        # Phase 1: Manager plans the mission
+        print("📋 Phase 1: mission planning")
         planning_task = Task(
             id="planning",
-            description=f"Plan how to complete this project: {task_description}. Project type: {project_type}. Define phases, assign roles, and establish execution order."
+            description=f"Plan how to complete this mission: {task_description}. mission type: {mission_type}. Define phases, assign roles, and establish execution order."
         )
         
         planning_result = await self.agents["manager"].process_task(planning_task)
@@ -761,7 +761,7 @@ class MultiAgentSystem:
         print("📊 Phase 3: Data analysis")
         analysis_task = Task(
             id="analysis",
-            description=f"Analyze the collected information for the project: {task_description}. Identify patterns, insights, and recommendations based on research data."
+            description=f"Analyze the collected information for the mission: {task_description}. Identify patterns, insights, and recommendations based on research data."
         )
         
         # Share research results with the analyst
@@ -789,7 +789,7 @@ class MultiAgentSystem:
         print("🔍 Phase 5: Review and quality control")
         review_task = Task(
             id="review",
-            description=f"Review all work done for the project: {task_description}. Verify quality, completeness, and consistency. Provide feedback and suggestions for improvements."
+            description=f"Review all work done for the mission: {task_description}. Verify quality, completeness, and consistency. Provide feedback and suggestions for improvements."
         )
         
         # Share all results with the reviewer
@@ -809,7 +809,7 @@ class MultiAgentSystem:
         # The manager requests final feedback
         feedback_msg = await self.agents["manager"].communicate(
             "reviewer", 
-            "Can you provide final feedback on the completed project? Are there areas that need improvements?"
+            "Can you provide final feedback on the completed mission? Are there areas that need improvements?"
         )
         
         final_feedback = await self.agents["reviewer"].respond_to_message(feedback_msg)
@@ -817,8 +817,8 @@ class MultiAgentSystem:
         
         # Risultato finale compilato
         final_result = {
-            "project_description": task_description,
-            "project_type": project_type,
+            "mission_description": task_description,
+            "mission_type": mission_type,
             "phases": {
                 "planning": planning_result,
                 "research": research_result,

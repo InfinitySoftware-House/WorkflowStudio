@@ -673,7 +673,7 @@ def get_default_agents_info():
             'name': 'Manager',
             'type': 'manager',
             'icon': 'fas fa-user-tie',
-            'description': 'Coordinates projects and manages the team',
+            'description': 'Coordinates missions and manages the team',
             'status': 'idle'
         },
         {
@@ -719,7 +719,7 @@ def get_workflow_agents_info(workflow):
     agent_type_mapping = {
         'manager': {
             'icon': 'fas fa-user-tie',
-            'description': 'Coordinates projects and manages the team'
+            'description': 'Coordinates missions and manages the team'
         },
         'researcher': {
             'icon': 'fas fa-search', 

@@ -29,12 +29,12 @@ class WorkflowBuilder {
             console.log('Workflow log:', log);
         });
 
-        this.socket.on('project_completed', (result) => {
+        this.socket.on('mission_completed', (result) => {
             console.log('Workflow completed:', result);
             this.showNotification('Workflow completed successfully!', 'success');
         });
 
-        this.socket.on('project_error', (error) => {
+        this.socket.on('mission_error', (error) => {
             console.error('Workflow error:', error);
             this.showNotification('Workflow execution failed: ' + error.error, 'error');
         });
@@ -941,10 +941,10 @@ class WorkflowBuilder {
     }
 
     async runWorkflow() {
-        const projectDescription = document.getElementById('workflow-project-description').value;
+        const missionDescription = document.getElementById('workflow-mission-description').value;
 
-        if (!projectDescription) {
-            this.showNotification('Please enter a project description', 'warning');
+        if (!missionDescription) {
+            this.showNotification('Please enter a mission description', 'warning');
             return;
         }
 
@@ -958,7 +958,7 @@ class WorkflowBuilder {
                 },
                 body: JSON.stringify({
                     workflow: workflowData,
-                    description: projectDescription
+                    description: missionDescription
                 })
             });
 
