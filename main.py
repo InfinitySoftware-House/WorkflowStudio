@@ -314,77 +314,13 @@ class WebSearchTool:
                 "error": True
             }]
     
-    def search_news(self, query: str, max_results: int = None) -> List[Dict[str, Any]]:
-        """
-        Search for news articles using Google search with news filter
-        
-        Args:
-            query: Search query string
-            max_results: Maximum number of results to return
-            
-        Returns:
-            List of news results with title, snippet, URL, and date
-        """
-        if not SEARCH_AVAILABLE:
-            return [{
-                "title": "News Search Not Available",
-                "snippet": "Google search dependencies not installed.",
-                "url": "",
-                "date": "",
-                "error": True
-            }]
-        
-        try:
-            # Add "news" to the query to get more news-related results
-            news_query = f"{query} news"
-            
-            # Use the regular web search but with news-focused query
-            web_results = self.search_web(news_query, max_results)
-            
-            # Convert web results to news format
-            news_results = []
-            for result in web_results:
-                if result.get("error"):
-                    news_results.append({
-                        "title": "News Search Error",
-                        "snippet": result.get("snippet", ""),
-                        "url": result.get("url", ""),
-                        "date": "",
-                        "source": "",
-                        "error": True
-                    })
-                else:
-                    # Extract title from URL or use snippet
-                    url = result.get("url", "")
-                    title = url.split("/")[-1].replace("-", " ").replace("_", " ").title() if url else "News Article"
-                    
-                    news_results.append({
-                        "title": title,
-                        "snippet": result.get("snippet", ""),
-                        "url": url,
-                        "date": "",  # Date extraction would require additional parsing
-                        "source": url.split("//")[1].split("/")[0] if "//" in url else "",
-                        "error": False
-                    })
-            
-            return news_results
-                
-        except Exception as e:
-            return [{
-                "title": "News Search Error",
-                "snippet": f"Error performing news search: {str(e)}",
-                "url": "",
-                "date": "",
-                "error": True
-            }]
-    
     def format_search_results(self, results: List[Dict[str, Any]], search_type: str = "web") -> str:
         """
         Format search results for use by AI agents
         
         Args:
             results: List of search results
-            search_type: Type of search (web, news)
+            search_type: Type of search (web)
             
         Returns:
             Formatted string with search results
@@ -404,11 +340,6 @@ class WebSearchTool:
                 formatted_results += f"   Summary: {result['snippet']}\n"
             if result.get('body'):
                 formatted_results += f"   Content: {result['body']}\n"
-            
-            if search_type == "news" and result.get("date"):
-                formatted_results += f"   Date: {result['date']}\n"
-            if search_type == "news" and result.get("source"):
-                formatted_results += f"   Source: {result['source']}\n"
         
         formatted_results += "\n=== END SEARCH RESULTS ===\n"
         return formatted_results
@@ -469,7 +400,7 @@ class Agent:
         INSTRUCTIONS:
         1. Identify what specific information needs to be searched
         2. Create 2-3 focused search queries (keywords)
-        3. Determine if you need web content, news, or both
+        3. Determine if you need web content
         
         You MUST respond in this EXACT format. Do not deviate from this structure:
         
@@ -509,16 +440,11 @@ class Agent:
         all_search_results = ""
         
         for query in search_queries[:3]:  # Limit to 3 searches to avoid overload
-            if search_type in ["web", "both"]:
+            if search_type == "web":
                 web_results = self.search_tool.search_web(query, max_results=3)
                 formatted_web = self.search_tool.format_search_results(web_results, "web")
                 all_search_results += f"\n\nWEB SEARCH FOR: '{query}'\n{formatted_web}"
             
-            if search_type in ["news", "both"]:
-                news_results = self.search_tool.search_news(query, max_results=2)
-                formatted_news = self.search_tool.format_search_results(news_results, "news")
-                all_search_results += f"\n\nNEWS SEARCH FOR: '{query}'\n{formatted_news}"
-        
         # Now synthesize the research with the search results
         synthesis_prompt = f"""
         Research task: {task.description}
@@ -594,12 +520,7 @@ class Agent:
                 if "SEARCH TYPE:" in line.upper():
                     type_line = line.lower()
                     break
-            
-            if "news" in type_line and "web" in type_line:
-                return "both"
-            elif "news" in type_line:
-                return "news"
-            else:
+                
                 return "web"
         
         return "web"  # Default to web search
@@ -668,14 +589,14 @@ class MultiAgentSystem:
         You are a Researcher specialized in information gathering and analysis with web search capabilities.
         Your responsibilities include:
         - Researching in-depth information on specific topics using web search tools
-        - Performing targeted web searches and news searches when needed
+        - Performing targeted web searches when needed
         - Verifying source credibility and fact-checking information
         - Identifying trends and patterns from online sources
         - Providing accurate and up-to-date data from web searches
         - Synthesizing complex information from multiple web sources
         - Analyzing search results to extract key insights
-        
-        You have access to DuckDuckGo web search and news search capabilities.
+
+        You have access to DuckDuckGo web search capabilities.
         When given a research task, you should:
         1. Analyze what information is needed
         2. Determine appropriate search queries

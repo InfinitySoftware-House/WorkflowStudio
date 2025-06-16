@@ -233,21 +233,23 @@
     </div>
 
     <!-- Modals -->
-    <div id="load-workflow-modal" class="modal" style="display: none;">
-        <div class="modal-content large-modal">
+    <div id="load-workflow-modal" class="modal fullscreen-modal" style="display: none;">
+        <div class="modal-content fullscreen-content">
             <div class="modal-header">
-                <h3>Load Workflow</h3>
+                <h3><i class="fas fa-folder-open"></i> Load Workflow</h3>
                 <button class="modal-close">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="workflow-list" id="workflow-list">
+            <div class="modal-body fullscreen-body">
+                <div class="workflow-grid" id="workflow-list">
                     <div class="loading">
                         <i class="fas fa-spinner fa-spin"></i> Loading workflows...
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="cancel-load-btn" class="btn btn-secondary">Cancel</button>
+                <button id="cancel-load-btn" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
             </div>
         </div>
     </div>

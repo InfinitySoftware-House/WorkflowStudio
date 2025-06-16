@@ -1042,14 +1042,38 @@ class WorkflowBuilder {
         workflows.forEach(workflow => {
             const workflowItem = document.createElement('div');
             workflowItem.className = 'workflow-item';
+            
+            // Determine workflow type based on name or metadata
+            const workflowType = this.getWorkflowType(workflow.name);
+            const nodeCount = workflow.metadata?.node_count || 0;
+            const connectionCount = workflow.metadata?.connection_count || 0;
+            
             workflowItem.innerHTML = `
+                <div class="workflow-type-badge">${workflowType}</div>
+                <div class="workflow-stats">
+                    <i class="fas fa-sitemap"></i> ${nodeCount}
+                </div>
                 <div class="workflow-info">
-                    <div class="workflow-name">${workflow.name}</div>
-                    <div class="workflow-description">${workflow.description || 'No description'}</div>
+                    <div class="workflow-name">
+                        <i class="fas fa-project-diagram"></i>
+                        ${workflow.name}
+                    </div>
+                    <div class="workflow-description">
+                        ${workflow.description || 'No description available for this workflow.'}
+                    </div>
                     <div class="workflow-meta">
-                        <span><i class="fas fa-sitemap"></i> ${workflow.metadata?.node_count || 0} nodes</span>
-                        <span><i class="fas fa-link"></i> ${workflow.metadata?.connection_count || 0} connections</span>
-                        <span><i class="fas fa-clock"></i> ${this.formatDate(workflow.created_at)}</span>
+                        <div class="workflow-meta-item">
+                            <i class="fas fa-sitemap"></i>
+                            <span>${nodeCount} nodes</span>
+                        </div>
+                        <div class="workflow-meta-item">
+                            <i class="fas fa-link"></i>
+                            <span>${connectionCount} connections</span>
+                        </div>
+                        <div class="workflow-meta-item">
+                            <i class="fas fa-clock"></i>
+                            <span>${this.formatDate(workflow.created_at)}</span>
+                        </div>
                     </div>
                 </div>
                 <div class="workflow-actions">
@@ -1059,23 +1083,47 @@ class WorkflowBuilder {
                     <button class="workflow-action-btn duplicate" data-action="duplicate" data-id="${workflow.id}">
                         <i class="fas fa-copy"></i> Duplicate
                     </button>
-                    <button class="workflow-action-btn delete" data-action="delete" data-id="${workflow.id}">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
                 </div>
             `;
 
             // Add event listeners
             const loadBtn = workflowItem.querySelector('[data-action="load"]');
             const duplicateBtn = workflowItem.querySelector('[data-action="duplicate"]');
-            const deleteBtn = workflowItem.querySelector('[data-action="delete"]');
+            
+            loadBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.loadWorkflow(workflow.id);
+            });
+            
+            duplicateBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.duplicateWorkflow(workflow.id);
+            });
 
-            loadBtn.addEventListener('click', () => this.loadWorkflow(workflow.id));
-            duplicateBtn.addEventListener('click', () => this.duplicateWorkflow(workflow.id));
-            deleteBtn.addEventListener('click', () => this.deleteWorkflow(workflow.id));
+            // Make the whole item clickable (selectable)
+            workflowItem.addEventListener('click', () => {
+                // Remove selection from other items
+                document.querySelectorAll('.workflow-item.selected').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                // Select this item
+                workflowItem.classList.add('selected');
+            });
 
             workflowList.appendChild(workflowItem);
         });
+    }
+
+    getWorkflowType(workflowName) {
+        const name = workflowName.toLowerCase();
+        if (name.includes('business') || name.includes('plan')) return 'Business';
+        if (name.includes('marketing') || name.includes('campaign')) return 'Marketing';
+        if (name.includes('research') || name.includes('analysis')) return 'Research';
+        if (name.includes('content') || name.includes('blog')) return 'Content';
+        if (name.includes('product') || name.includes('launch')) return 'Product';
+        return 'Custom';
     }
 
     async loadWorkflow(workflowId) {

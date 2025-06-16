@@ -179,7 +179,6 @@ You can override configuration with environment variables:
 ### Web Search Integration
 The Researcher agent can:
 - Perform Google web searches
-- Search for recent news articles
 - Extract and summarize web content
 - Cite sources in research reports
 
