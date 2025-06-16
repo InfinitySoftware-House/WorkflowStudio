@@ -1594,7 +1594,7 @@ class WorkflowBuilder {
     getAgentInfo(agentType) {
         const agentTypes = {
             'manager': {
-                title: 'mission Manager',
+                title: 'Mission Manager',
                 description: 'Manages mission workflow and coordination',
                 icon: 'fas fa-user-tie',
                 color: '#4F46E5' // Indigo
