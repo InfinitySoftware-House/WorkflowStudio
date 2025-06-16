@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script di avvio per InfinityBench AI Web Interface
+Startup script for InfinityBench AI Web Interface
 """
 
 import os
@@ -8,67 +8,68 @@ import sys
 import subprocess
 import time
 import requests
+from config import SERVER_PORT, OLLAMA_BASE_URL, OLLAMA_API_VERSION, OLLAMA_API_TAGS, OLLAMA_TIMEOUT, DEFAULT_MODEL
 
 def check_ollama_connection():
-    """Verifica se Ollama è in esecuzione"""
+    """Check if Ollama is running"""
     try:
-        response = requests.get("http://localhost:11434/api/version", timeout=5)
+        response = requests.get(f"{OLLAMA_BASE_URL}{OLLAMA_API_VERSION}", timeout=OLLAMA_TIMEOUT)
         return response.status_code == 200
     except:
         return False
 
 def check_ollama_model():
-    """Verifica se il modello llama3.2:latest è disponibile"""
+    """Check if the default model is available"""
     try:
-        response = requests.get("http://localhost:11434/api/tags", timeout=5)
+        response = requests.get(f"{OLLAMA_BASE_URL}{OLLAMA_API_TAGS}", timeout=OLLAMA_TIMEOUT)
         if response.status_code == 200:
             models = response.json().get('models', [])
-            return any('llama3.2:latest' in model.get('name', '') for model in models)
+            return any(DEFAULT_MODEL in model.get('name', '') for model in models)
     except:
         pass
     return False
 
 def main():
-    print("🚀 InfinityBench AI - Avvio Sistema")
+    print("🚀 InfinityBench AI - System Startup")
     print("=" * 50)
     
-    # Verifica Ollama
-    print("🔍 Verifica connessione Ollama...")
+    # Check Ollama
+    print("🔍 Checking Ollama connection...")
     if not check_ollama_connection():
-        print("❌ Ollama non è in esecuzione!")
-        print("💡 Avvia Ollama con: ollama serve")
-        print("💡 Poi riavvia questo script")
+        print("❌ Ollama is not running!")
+        print("💡 Start Ollama with: ollama serve")
+        print("💡 Then restart this script")
         return
     
-    print("✅ Ollama è in esecuzione")
+    print("✅ Ollama is running")
     
-    # Verifica modello
-    print("🔍 Verifica modello llama3.2:latest...")
+    # Check model
+    print(f"🔍 Checking {DEFAULT_MODEL} model...")
     if not check_ollama_model():
-        print("⚠️  Modello llama3.2:latest non trovato!")
-        print("💡 Installa il modello con: ollama pull llama3.2:latest")
+        print(f"⚠️  Model {DEFAULT_MODEL} not found!")
+        print(f"💡 Install the model with: ollama pull {DEFAULT_MODEL}")
         
-        # Chiedi se procedere comunque
-        choice = input("Vuoi continuare comunque? (s/n): ").strip().lower()
-        if choice != 's':
+        # Ask if continue anyway
+        choice = input("Do you want to continue anyway? (y/n): ").strip().lower()
+        if choice != 'y':
             return
     else:
-        print("✅ Modello llama3.2:latest disponibile")
+        print(f"✅ Model {DEFAULT_MODEL} available")
     
-    # Avvia il server web
-    print("\n🌐 Avvio server web...")
-    print("📱 Interface sarà disponibile su: http://localhost:7777")
-    print("🔗 WebSocket attivo per aggiornamenti in tempo reale")
-    print("\n💡 Premi Ctrl+C per fermare il server")
+    # Start web server
+    print("\n🌐 Starting web server...")
+    print(f"📱 Interface will be available at: http://localhost:{SERVER_PORT}")
+    print("🔗 WebSocket active for real-time updates")
+    print("\n💡 Press Ctrl+C to stop the server")
     print("=" * 50)
     
     try:
-        # Avvia il server web
+        # Start web server
         os.system("python3 web_server.py")
     except KeyboardInterrupt:
-        print("\n\n👋 Server fermato. Arrivederci!")
+        print("\n\n👋 Server stopped. Goodbye!")
     except Exception as e:
-        print(f"\n❌ Errore nell'avvio del server: {e}")
+        print(f"\n❌ Error starting server: {e}")
 
 if __name__ == "__main__":
     main()

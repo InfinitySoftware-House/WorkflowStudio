@@ -12,12 +12,17 @@ import json
 import threading
 import os
 import uuid
+import requests
 from datetime import datetime
 from main import MultiAgentSystem
+from config import (
+    SERVER_PORT, SERVER_HOST, SECRET_KEY, TEMPLATES_AUTO_RELOAD,
+    WORKFLOWS_DIR, MAX_LOGS_DISPLAY, OLLAMA_BASE_URL, OLLAMA_API_TAGS, OLLAMA_TIMEOUT
+)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'infinitybench_ai_secret_2024'
-app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SECRET_KEY'] = SECRET_KEY
+app.config['TEMPLATES_AUTO_RELOAD'] = TEMPLATES_AUTO_RELOAD
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
@@ -249,7 +254,7 @@ def get_status():
         'current_mission': app_state['current_mission'],
         'current_phase': app_state['current_phase'],
         'phases_completed': app_state['phases_completed'],
-        'logs': app_state['logs'][-50:]  # Last 50 logs
+        'logs': app_state['logs'][-MAX_LOGS_DISPLAY:]  # Last logs based on config
     })
 
 @app.route('/api/start_mission', methods=['POST'])
@@ -289,17 +294,17 @@ def get_logs():
     return jsonify({'logs': app_state['logs']})
 
 # Configuration for workflows
-WORKFLOWS_DIR = os.path.join(os.path.dirname(__file__), 'workflows')
-if not os.path.exists(WORKFLOWS_DIR):
-    os.makedirs(WORKFLOWS_DIR)
+WORKFLOWS_PATH = os.path.join(os.path.dirname(__file__), WORKFLOWS_DIR)
+if not os.path.exists(WORKFLOWS_PATH):
+    os.makedirs(WORKFLOWS_PATH)
 
 def load_workflows():
     """Load all saved workflows from disk"""
     workflows = []
     try:
-        for filename in os.listdir(WORKFLOWS_DIR):
+        for filename in os.listdir(WORKFLOWS_PATH):
             if filename.endswith('.json'):
-                filepath = os.path.join(WORKFLOWS_DIR, filename)
+                filepath = os.path.join(WORKFLOWS_PATH, filename)
                 with open(filepath, 'r', encoding='utf-8') as f:
                     workflow_data = json.load(f)
                     workflows.append(workflow_data)
@@ -313,7 +318,7 @@ def save_workflow_to_disk(workflow_data):
         # Generate unique filename
         workflow_id = workflow_data.get('id', str(uuid.uuid4()))
         filename = f"workflow_{workflow_id}.json"
-        filepath = os.path.join(WORKFLOWS_DIR, filename)
+        filepath = os.path.join(WORKFLOWS_PATH, filename)
         
         # Add metadata
         workflow_data['id'] = workflow_id
@@ -333,7 +338,7 @@ def delete_workflow_from_disk(workflow_id):
     """Delete a workflow from disk"""
     try:
         filename = f"workflow_{workflow_id}.json"
-        filepath = os.path.join(WORKFLOWS_DIR, filename)
+        filepath = os.path.join(WORKFLOWS_PATH, filename)
         if os.path.exists(filepath):
             os.remove(filepath)
             return True
@@ -345,7 +350,7 @@ def update_workflow_on_disk(workflow_id, workflow_data):
     """Update an existing workflow on disk"""
     try:
         filename = f"workflow_{workflow_id}.json"
-        filepath = os.path.join(WORKFLOWS_DIR, filename)
+        filepath = os.path.join(WORKFLOWS_PATH, filename)
         
         if os.path.exists(filepath):
             # Load existing data to preserve creation date
@@ -451,7 +456,7 @@ def get_workflow(workflow_id):
     """Get a specific workflow by ID"""
     try:
         filename = f"workflow_{workflow_id}.json"
-        filepath = os.path.join(WORKFLOWS_DIR, filename)
+        filepath = os.path.join(WORKFLOWS_PATH, filename)
         
         if os.path.exists(filepath):
             with open(filepath, 'r', encoding='utf-8') as f:
@@ -467,7 +472,7 @@ def duplicate_workflow(workflow_id):
     """Duplicate an existing workflow"""
     try:
         filename = f"workflow_{workflow_id}.json"
-        filepath = os.path.join(WORKFLOWS_DIR, filename)
+        filepath = os.path.join(WORKFLOWS_PATH, filename)
         
         if os.path.exists(filepath):
             with open(filepath, 'r', encoding='utf-8') as f:
@@ -785,8 +790,7 @@ def handle_disconnect():
 def get_ollama_models():
     """Get available Ollama models"""
     try:
-        import requests
-        response = requests.get("http://localhost:11434/api/tags", timeout=5)
+        response = requests.get(f"{OLLAMA_BASE_URL}{OLLAMA_API_TAGS}", timeout=OLLAMA_TIMEOUT)
         if response.status_code == 200:
             data = response.json()
             models = []
@@ -805,15 +809,15 @@ def get_ollama_models():
 
 if __name__ == '__main__':
     print("🌐 Starting InfinityBench AI web server...")
-    print("📱 Interface available at: http://localhost:7777")
+    print(f"📱 Interface available at: http://localhost:{SERVER_PORT}")
     print("🔗 WebSocket active for real-time updates")
     
     try:
-        socketio.run(app, host='0.0.0.0', port=7777, debug=True, allow_unsafe_werkzeug=True)
+        socketio.run(app, host='0.0.0.0', port=SERVER_PORT, debug=True, allow_unsafe_werkzeug=True)
     except Exception as e:
         print(f"❌ Error starting server: {e}")
         print("🔄 Trying with alternative configuration...")
         try:
-            app.run(host='0.0.0.0', port=7777, debug=True)
+            app.run(host='0.0.0.0', port=SERVER_PORT, debug=True)
         except Exception as e2:
             print(f"❌ Error with alternative configuration too: {e2}")
