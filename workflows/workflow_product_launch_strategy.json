@@ -1,0 +1,166 @@
+{
+  "id": "product_launch_strategy",
+  "name": "Product Launch Strategy & Execution",
+  "description": "Complete workflow for planning and executing a successful product launch, from market validation to post-launch analysis",
+  "workflow": {
+    "nodes": [
+      {
+        "id": "node_1",
+        "title": "Market Validation Research",
+        "agentType": "researcher",
+        "description": "Research market demand, validate product-market fit, and gather customer feedback through surveys and market analysis.",
+        "position": {
+          "x": 200,
+          "y": 50
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_2",
+        "title": "Competitive Landscape Analysis",
+        "agentType": "analyst",
+        "description": "Analyze direct and indirect competitors, identify market positioning opportunities, and define unique value proposition.",
+        "position": {
+          "x": 200,
+          "y": 200
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_3",
+        "title": "Launch Strategy Planning",
+        "agentType": "manager",
+        "description": "Develop comprehensive launch strategy including timeline, budget, resources, key milestones, and success metrics.",
+        "position": {
+          "x": 200,
+          "y": 350
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_4",
+        "title": "Marketing Materials Creation",
+        "agentType": "writer",
+        "description": "Create all marketing materials including product descriptions, website copy, brochures, and sales presentations.",
+        "position": {
+          "x": 50,
+          "y": 500
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_5",
+        "title": "PR & Media Strategy",
+        "agentType": "writer",
+        "description": "Develop press releases, media kits, and PR strategy to generate buzz and media coverage for the product launch.",
+        "position": {
+          "x": 350,
+          "y": 500
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_6",
+        "title": "Digital Marketing Campaign",
+        "agentType": "custom",
+        "description": "Plan and create digital marketing campaigns including social media, PPC, email marketing, and influencer partnerships.",
+        "position": {
+          "x": 200,
+          "y": 650
+        },
+        "model": null,
+        "customPrompt": "You are a digital marketing specialist with expertise in multi-channel campaigns. Focus on creating cohesive digital strategies that maximize reach and engagement across all digital touchpoints."
+      },
+      {
+        "id": "node_7",
+        "title": "Launch Execution Review",
+        "agentType": "reviewer",
+        "description": "Review all launch materials and strategies for consistency, effectiveness, and alignment with business objectives before execution.",
+        "position": {
+          "x": 200,
+          "y": 800
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_8",
+        "title": "Post-Launch Analysis",
+        "agentType": "analyst",
+        "description": "Analyze launch performance metrics, gather customer feedback, and provide recommendations for optimization and future launches.",
+        "position": {
+          "x": 200,
+          "y": 950
+        },
+        "model": null,
+        "customPrompt": ""
+      }
+    ],
+    "connections": [
+      {
+        "id": "conn_1",
+        "source": "node_1",
+        "target": "node_2"
+      },
+      {
+        "id": "conn_2",
+        "source": "node_2",
+        "target": "node_3"
+      },
+      {
+        "id": "conn_3",
+        "source": "node_3",
+        "target": "node_4"
+      },
+      {
+        "id": "conn_4",
+        "source": "node_3",
+        "target": "node_5"
+      },
+      {
+        "id": "conn_5",
+        "source": "node_3",
+        "target": "node_6"
+      },
+      {
+        "id": "conn_6",
+        "source": "node_4",
+        "target": "node_7"
+      },
+      {
+        "id": "conn_7",
+        "source": "node_5",
+        "target": "node_7"
+      },
+      {
+        "id": "conn_8",
+        "source": "node_6",
+        "target": "node_7"
+      },
+      {
+        "id": "conn_9",
+        "source": "node_7",
+        "target": "node_8"
+      }
+    ]
+  },
+  "metadata": {
+    "node_count": 8,
+    "connection_count": 9,
+    "agent_types": [
+      "researcher",
+      "analyst",
+      "manager",
+      "writer",
+      "custom",
+      "reviewer"
+    ]
+  },
+  "created_at": "2025-06-16T10:30:00.000Z",
+  "updated_at": "2025-06-16T10:30:00.000Z"
+}

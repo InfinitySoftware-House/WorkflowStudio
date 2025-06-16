@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Builder - InfinityBench AI</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/workflow.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+</head>
+<body>
+    <div class="workflow-container">
+        <!-- Header -->
+        <header class="workflow-header">
+            <div class="header-left">
+                <h1><i class="fas fa-project-diagram"></i> Workflow Builder</h1>
+            </div>
+            <div class="header-actions">
+                <button id="load-workflow-btn" class="btn btn-secondary">
+                    <i class="fas fa-folder-open"></i> Load Workflow
+                </button>
+                <button id="save-workflow-btn" class="btn btn-secondary">
+                    <i class="fas fa-save"></i> Save Workflow
+                </button>
+                <button id="run-workflow-btn" class="btn btn-primary">
+                    <i class="fas fa-play"></i> Run Workflow
+                </button>
+                <a href="/" class="btn btn-outline">
+                    <i class="fas fa-home"></i> Home
+                </a>
+            </div>
+        </header>
+
+        <div class="workflow-layout">
+            <!-- Sidebar with agent palette -->
+            <div class="agent-palette">
+                <h3><i class="fas fa-palette"></i> Agent Palette</h3>
+                
+                <div class="palette-section">
+                    <h4>Standard Agents</h4>
+                    <div class="agent-item" draggable="true" data-agent-type="manager">
+                        <i class="fas fa-user-tie"></i>
+                        <span>Manager</span>
+                    </div>
+                    <div class="agent-item" draggable="true" data-agent-type="researcher">
+                        <i class="fas fa-search"></i>
+                        <span>Researcher</span>
+                    </div>
+                    <div class="agent-item" draggable="true" data-agent-type="analyst">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Analyst</span>
+                    </div>
+                    <div class="agent-item" draggable="true" data-agent-type="writer">
+                        <i class="fas fa-pen-fancy"></i>
+                        <span>Writer</span>
+                    </div>
+                    <div class="agent-item" draggable="true" data-agent-type="reviewer">
+                        <i class="fas fa-eye"></i>
+                        <span>Reviewer</span>
+                    </div>
+                </div>
+
+                <div class="palette-section">
+                    <h4>Custom Agents</h4>
+                    <div class="agent-item" draggable="true" data-agent-type="custom">
+                        <i class="fas fa-robot"></i>
+                        <span>Custom Agent</span>
+                    </div>
+                </div>
+
+                <div class="palette-section">
+                    <h4>Tools</h4>
+                    <button id="clear-canvas-btn" class="tool-btn">
+                        <i class="fas fa-trash"></i> Clear Canvas
+                    </button>
+                </div>
+
+                <div class="palette-section">
+                    <h4>Layout</h4>
+                    <button id="arrange-sequential-btn" class="tool-btn">
+                        <i class="fas fa-sort-amount-down"></i> Auto Arrange
+                    </button>
+                    <button id="reset-layout-btn" class="tool-btn">
+                        <i class="fas fa-redo"></i> Reset Layout
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main canvas area -->
+            <div class="canvas-area">
+                <div id="workflow-canvas" class="workflow-canvas">
+                    <div class="canvas-grid"></div>
+                    <!-- Nodes will be added here dynamically -->
+                </div>
+                
+                <!-- Canvas controls -->
+                <div class="canvas-controls">
+                    <button id="zoom-in-btn"><i class="fas fa-plus"></i></button>
+                    <button id="zoom-out-btn"><i class="fas fa-minus"></i></button>
+                    <button id="reset-zoom-btn"><i class="fas fa-expand-arrows-alt"></i></button>
+                </div>
+            </div>
+
+            <!-- Properties panel -->
+            <div class="properties-panel">
+                <h3><i class="fas fa-cog"></i> Properties</h3>
+                
+                <div id="no-selection" class="property-section">
+                    <p class="muted">Select a node to edit its properties</p>
+                </div>
+
+                <div id="node-properties" class="property-section" style="display: none;">
+                    <div class="form-group">
+                        <label for="node-id">Node ID</label>
+                        <input type="text" id="node-id" placeholder="unique-id">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="node-title">Title</label>
+                        <input type="text" id="node-title" placeholder="Agent Title">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="node-description">Task Description</label>
+                        <textarea id="node-description" rows="4" placeholder="Describe what this agent should do..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="node-agent-type">Agent Type</label>
+                        <select id="node-agent-type">
+                            <option value="manager">Manager</option>
+                            <option value="researcher">Researcher</option>
+                            <option value="analyst">Analyst</option>
+                            <option value="writer">Writer</option>
+                            <option value="reviewer">Reviewer</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="node-model">Model</label>
+                        <select id="node-model">
+                            <option value="">Loading models...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="node-color">Node Color</label>
+                        <div class="color-picker-container">
+                            <input type="color" id="node-color" value="#2d3748" title="Choose node color">
+                            <span class="color-preview" id="color-preview"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="custom-prompt-group" style="display: none;">
+                        <label for="node-custom-prompt">Custom System Prompt</label>
+                        <textarea id="node-custom-prompt" rows="3" placeholder="Custom system prompt for this agent..."></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button id="update-node-btn" class="btn btn-primary">
+                            <i class="fas fa-check"></i> Update Node
+                        </button>
+                        <button id="delete-node-btn" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Delete Node
+                        </button>
+                    </div>
+                </div>
+
+                <div class="workflow-info">
+                    <h4>Workflow Info</h4>
+                    <div class="info-item">
+                        <span>Nodes:</span>
+                        <span id="node-count">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Connections:</span>
+                        <span id="connection-count">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Execution Panel -->
+    <div id="workflow-execution-panel" class="execution-panel" style="display: none;">
+        <div class="execution-header">
+            <h3><i class="fas fa-play-circle"></i> Workflow Execution</h3>
+            <div class="execution-controls">
+                <button id="close-execution-btn" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+        
+        <div class="execution-content">
+            <!-- Project Info -->
+            <div class="execution-section">
+                <h4><i class="fas fa-info-circle"></i> Project Details</h4>
+                <div id="execution-project-info" class="project-info">
+                    <!-- Project details will be shown here -->
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="execution-section" id="workflow-results-section" style="display: none;">
+                <h4><i class="fas fa-check-circle"></i> Results</h4>
+                <div id="workflow-results" class="results-container">
+                    <!-- Results will be displayed here -->
+                </div>
+            </div>
+
+            <!-- Workflow Progress -->
+            <div class="execution-section">
+                <h4><i class="fas fa-tasks"></i> Workflow Progress</h4>
+                <div id="workflow-agents-container" class="agents-container">
+                    <!-- Agents will be displayed here -->
+                </div>
+            </div>
+
+            <!-- Live Logs -->
+            <div class="execution-section">
+                <h4><i class="fas fa-terminal"></i> Live Logs</h4>
+                <div id="workflow-logs" class="logs-container">
+                    <!-- Logs will be displayed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="load-workflow-modal" class="modal" style="display: none;">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Load Workflow</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="workflow-list" id="workflow-list">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading workflows...
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-load-btn" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="save-workflow-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Save Workflow</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="workflow-name">Workflow Name</label>
+                    <input type="text" id="workflow-name" placeholder="My Custom Workflow">
+                </div>
+                <div class="form-group">
+                    <label for="workflow-description">Description</label>
+                    <textarea id="workflow-description" rows="3" placeholder="Describe your workflow..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-save-btn" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-save-btn" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="run-workflow-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Run Workflow</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="workflow-project-description">Project Description</label>
+                    <textarea id="workflow-project-description" rows="4" placeholder="Describe the project for this workflow to complete..."></textarea>
+                </div>
+                <div class="workflow-preview">
+                    <h4>Workflow Preview</h4>
+                    <div id="workflow-preview-content">
+                        <!-- Preview will be generated here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-run-btn" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-run-btn" class="btn btn-primary">Run Workflow</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script src="{{ url_for('static', filename='js/workflow.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,1153 @@
+// Workflow Builder JavaScript
+class WorkflowBuilder {
+    constructor() {
+        this.canvas = document.getElementById('workflow-canvas');
+        this.nodes = new Map();
+        this.selectedNode = null;
+        this.nodeCounter = 0;
+        this.canvasOffset = { x: 0, y: 0 };
+        this.scale = 1;
+        this.currentWorkflowId = null; // Track current workflow for updating
+        
+        this.init();
+    }
+
+    init() {
+        this.setupEventListeners();
+        this.updateWorkflowInfo();
+        this.setupSocket();
+    }
+
+    setupSocket() {
+        this.socket = io();
+        
+        this.socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        this.socket.on('log_update', (log) => {
+            console.log('Workflow log:', log);
+        });
+
+        this.socket.on('project_completed', (result) => {
+            console.log('Workflow completed:', result);
+            this.showNotification('Workflow completed successfully!', 'success');
+        });
+
+        this.socket.on('project_error', (error) => {
+            console.error('Workflow error:', error);
+            this.showNotification('Workflow execution failed: ' + error.error, 'error');
+        });
+    }
+
+    setupEventListeners() {
+        // Drag and drop from palette
+        document.querySelectorAll('.agent-item').forEach(item => {
+            item.addEventListener('dragstart', this.handleDragStart.bind(this));
+        });
+
+        // Canvas drop
+        this.canvas.addEventListener('dragover', this.handleDragOver.bind(this));
+        this.canvas.addEventListener('drop', this.handleDrop.bind(this));
+
+        // Canvas events
+        this.canvas.addEventListener('click', this.handleCanvasClick.bind(this));
+        this.canvas.addEventListener('mousedown', this.handleCanvasMouseDown.bind(this));
+        this.canvas.addEventListener('mousemove', this.handleCanvasMouseMove.bind(this));
+        this.canvas.addEventListener('mouseup', this.handleCanvasMouseUp.bind(this));
+
+        // Buttons
+        document.getElementById('clear-canvas-btn').addEventListener('click', this.clearCanvas.bind(this));
+        document.getElementById('load-workflow-btn').addEventListener('click', this.showLoadModal.bind(this));
+        document.getElementById('save-workflow-btn').addEventListener('click', this.showSaveModal.bind(this));
+        document.getElementById('run-workflow-btn').addEventListener('click', this.showRunModal.bind(this));
+
+        // Layout buttons
+        document.getElementById('arrange-sequential-btn').addEventListener('click', this.arrangeNodesSequentially.bind(this));
+        document.getElementById('reset-layout-btn').addEventListener('click', this.resetLayout.bind(this));
+
+        // Canvas controls
+        document.getElementById('zoom-in-btn').addEventListener('click', () => this.zoom(1.2));
+        document.getElementById('zoom-out-btn').addEventListener('click', () => this.zoom(0.8));
+        document.getElementById('reset-zoom-btn').addEventListener('click', () => this.resetZoom());
+
+        // Properties panel
+        document.getElementById('update-node-btn').addEventListener('click', this.updateSelectedNode.bind(this));
+        document.getElementById('delete-node-btn').addEventListener('click', this.deleteSelectedNode.bind(this));
+        document.getElementById('node-agent-type').addEventListener('change', this.handleAgentTypeChange.bind(this));
+
+        // Modals
+        this.setupModalEvents();
+    }
+
+    setupModalEvents() {
+        // Load modal
+        document.getElementById('cancel-load-btn').addEventListener('click', this.hideLoadModal.bind(this));
+        
+        // Save modal
+        document.getElementById('cancel-save-btn').addEventListener('click', this.hideSaveModal.bind(this));
+        document.getElementById('confirm-save-btn').addEventListener('click', this.saveWorkflow.bind(this));
+        
+        // Run modal
+        document.getElementById('cancel-run-btn').addEventListener('click', this.hideRunModal.bind(this));
+        document.getElementById('confirm-run-btn').addEventListener('click', this.runWorkflow.bind(this));
+
+        // Modal close buttons
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.target.closest('.modal').style.display = 'none';
+            });
+        });
+
+        // Close modals on outside click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    handleDragStart(e) {
+        e.dataTransfer.setData('text/plain', e.target.dataset.agentType);
+        e.dataTransfer.effectAllowed = 'copy';
+    }
+
+    handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+    }
+
+    handleDrop(e) {
+        e.preventDefault();
+        const agentType = e.dataTransfer.getData('text/plain');
+        
+        // Get drop position
+        const rect = this.canvas.getBoundingClientRect();
+        const dropY = e.clientY - rect.top;
+        
+        // Determine insertion position based on drop Y coordinate
+        const nodeArray = Array.from(this.nodes.values());
+        let insertPosition = nodeArray.length; // Default to end
+        
+        if (nodeArray.length > 0) {
+            // Find the position to insert based on Y coordinate
+            for (let i = 0; i < nodeArray.length; i++) {
+                if (dropY < nodeArray[i].position.y + 60) { // 60 is half node height
+                    insertPosition = i;
+                    break;
+                }
+            }
+        }
+        
+        // Insert node at determined position
+        this.insertNodeAtPosition(agentType, insertPosition);
+    }
+
+    // Layout functions for sequential FIFO arrangement
+    arrangeNodesSequentially() {
+        const nodeArray = Array.from(this.nodes.values());
+        const nodeHeight = 120; // Base height for each node
+        const nodeSpacing = 30; // Spacing between nodes
+        const canvasWidth = this.canvas.clientWidth;
+        const nodeWidth = Math.min(600, canvasWidth - 80); // Max width with padding
+        
+        // Sort nodes by their current Y position or creation order
+        nodeArray.sort((a, b) => {
+            if (a.position.y === b.position.y) {
+                return parseInt(a.id.split('_')[1]) - parseInt(b.id.split('_')[1]);
+            }
+            return a.position.y - b.position.y;
+        });
+
+        // Arrange nodes in FIFO order (top to bottom)
+        let currentY = 40; // Starting position
+        const centerX = (canvasWidth - nodeWidth) / 2;
+
+        nodeArray.forEach((node, index) => {
+            const newX = centerX;
+            const newY = currentY + (index * (nodeHeight + nodeSpacing));
+            
+            // Update node position
+            node.position.x = newX;
+            node.position.y = newY;
+            
+            // Update DOM element position
+            node.element.style.left = `${newX}px`;
+            node.element.style.top = `${newY}px`;
+            node.element.style.width = `${nodeWidth}px`;
+        });
+
+        // Redraw after repositioning
+        this.updateWorkflowInfo();
+    }
+
+    addNodeInSequentialOrder(agentType, x = null, y = null) {
+        // Calculate position for new node in sequential order
+        const nodeArray = Array.from(this.nodes.values());
+        const nodeHeight = 120;
+        const nodeSpacing = 30;
+        const canvasWidth = this.canvas.clientWidth;
+        const nodeWidth = Math.min(600, canvasWidth - 80);
+        
+        // Position at the end of the sequence
+        const newY = nodeArray.length > 0 ? 
+            Math.max(...nodeArray.map(n => n.position.y + nodeHeight + nodeSpacing)) :
+            40;
+        const newX = (canvasWidth - nodeWidth) / 2;
+        
+        // Create the node
+        this.createNode(agentType, x || newX, y || newY);
+    }
+
+    insertNodeAtPosition(agentType, position) {
+        // Insert a node at a specific position in the sequence
+        const nodeArray = Array.from(this.nodes.values());
+        
+        if (position < 0 || position > nodeArray.length) {
+            position = nodeArray.length; // Add to end if invalid position
+        }
+
+        // Create node at temporary position
+        const tempX = 100;
+        const tempY = 100;
+        this.createNode(agentType, tempX, tempY);
+
+        // Rearrange all nodes
+        this.arrangeNodesSequentially();
+    }
+
+    // Enhanced createNode for sequential layout
+    createNode(agentType, x, y) {
+        const nodeId = `node_${++this.nodeCounter}`;
+        const agentInfo = this.getAgentInfo(agentType);
+        
+        const nodeElement = document.createElement('div');
+        nodeElement.className = 'workflow-node';
+        nodeElement.dataset.nodeId = nodeId;
+        nodeElement.style.left = `${x}px`;
+        nodeElement.style.top = `${y}px`;
+        
+        nodeElement.innerHTML = `
+            <div class="node-header">
+                <i class="${agentInfo.icon}"></i>
+                <span class="node-title">${agentInfo.title}</span>
+                <span class="node-order">#${this.nodeCounter}</span>
+            </div>
+            <div class="node-description">${agentInfo.description}</div>
+            <div class="node-type">${agentType}</div>
+            <div class="node-actions">
+                <button class="node-action-btn move-up" title="Move Up">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+                <button class="node-action-btn move-down" title="Move Down">
+                    <i class="fas fa-arrow-down"></i>
+                </button>
+                <button class="node-action-btn delete-node" title="Delete Node">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+
+        // Add event listeners
+        nodeElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.selectNode(nodeId);
+        });
+
+        nodeElement.addEventListener('mousedown', this.handleNodeMouseDown.bind(this));
+
+        // Node action buttons
+        const moveUpBtn = nodeElement.querySelector('.move-up');
+        const moveDownBtn = nodeElement.querySelector('.move-down');
+        const deleteBtn = nodeElement.querySelector('.delete-node');
+
+        moveUpBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.moveNodeUp(nodeId);
+        });
+
+        moveDownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.moveNodeDown(nodeId);
+        });
+
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.deleteNode(nodeId);
+        });
+
+        this.canvas.appendChild(nodeElement);
+
+        // Store node data
+        const nodeData = {
+            id: nodeId,
+            agentType: agentType,
+            title: agentInfo.title,
+            description: agentInfo.description,
+            customPrompt: '',
+            position: { x, y },
+            element: nodeElement,
+            order: this.nodeCounter
+        };
+
+        this.nodes.set(nodeId, nodeData);
+        this.updateWorkflowInfo();
+        this.selectNode(nodeId);
+
+        return nodeData;
+    }
+
+    moveNodeUp(nodeId) {
+        const nodeArray = Array.from(this.nodes.values()).sort((a, b) => a.order - b.order);
+        const currentIndex = nodeArray.findIndex(n => n.id === nodeId);
+        
+        if (currentIndex > 0) {
+            // Swap with previous node
+            const currentNode = nodeArray[currentIndex];
+            const previousNode = nodeArray[currentIndex - 1];
+            
+            // Swap order values
+            const tempOrder = currentNode.order;
+            currentNode.order = previousNode.order;
+            previousNode.order = tempOrder;
+            
+            // Update visual order in DOM
+            currentNode.element.querySelector('.node-order').textContent = `#${currentNode.order}`;
+            previousNode.element.querySelector('.node-order').textContent = `#${previousNode.order}`;
+            
+            // Rearrange visually
+            this.arrangeNodesSequentially();
+        }
+    }
+
+    moveNodeDown(nodeId) {
+        const nodeArray = Array.from(this.nodes.values()).sort((a, b) => a.order - b.order);
+        const currentIndex = nodeArray.findIndex(n => n.id === nodeId);
+        
+        if (currentIndex < nodeArray.length - 1) {
+            // Swap with next node
+            const currentNode = nodeArray[currentIndex];
+            const nextNode = nodeArray[currentIndex + 1];
+            
+            // Swap order values
+            const tempOrder = currentNode.order;
+            currentNode.order = nextNode.order;
+            nextNode.order = tempOrder;
+            
+            // Update visual order in DOM
+            currentNode.element.querySelector('.node-order').textContent = `#${currentNode.order}`;
+            nextNode.element.querySelector('.node-order').textContent = `#${nextNode.order}`;
+            
+            // Rearrange visually
+            this.arrangeNodesSequentially();
+        }
+    }
+        }
+    }
+
+    
+    handleCanvasClick(e) {
+        if (e.target === this.canvas || e.target.classList.contains('canvas-grid')) {
+            // Deselect node
+            if (this.selectedNode) {
+                const node = this.nodes.get(this.selectedNode);
+                if (node && node.element) {
+                    node.element.classList.remove('selected');
+                }
+                this.selectedNode = null;
+                document.getElementById('no-selection').style.display = 'block';
+                document.getElementById('node-properties').style.display = 'none';
+            }
+        }
+    }
+
+    handleNodeMouseDown(e) {
+        if (e.button !== 0) return; // Only left click
+
+        const nodeElement = e.currentTarget;
+        const nodeId = nodeElement.dataset.nodeId;
+        
+        this.selectNode(nodeId);
+
+        // Start dragging
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startLeft = parseInt(nodeElement.style.left);
+        const startTop = parseInt(nodeElement.style.top);
+
+        // Add dragging class immediately
+        nodeElement.classList.add('dragging');
+
+        const handleMouseMove = (e) => {
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            
+            const newLeft = startLeft + deltaX;
+            const newTop = startTop + deltaY;
+            
+            // Use transform for better performance during drag
+            nodeElement.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+
+            // Update node position data
+            const node = this.nodes.get(nodeId);
+            if (node) {
+                node.position.x = newLeft;
+                node.position.y = newTop;
+            }
+
+            // Throttle connection redrawing for better performance
+            if (!this.redrawPending) {
+                this.redrawPending = true;
+                requestAnimationFrame(() => {
+                    this.redrawConnections();
+                    this.redrawPending = false;
+                });
+            }
+        };
+
+        const handleMouseUp = () => {
+            // Remove dragging class and reset transform
+            nodeElement.classList.remove('dragging');
+            
+            // Apply final position using left/top instead of transform
+            const node = this.nodes.get(nodeId);
+            if (node) {
+                nodeElement.style.left = `${node.position.x}px`;
+                nodeElement.style.top = `${node.position.y}px`;
+                nodeElement.style.transform = '';
+            }
+
+            // Final redraw of connections
+            this.redrawConnections();
+
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    handleCanvasMouseDown(e) {
+        // Canvas panning (if implemented)
+    }
+
+    handleCanvasMouseMove(e) {
+        // Track mouse position for temporary connections
+        const rect = this.canvas.getBoundingClientRect();
+        this.mousePosition = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+
+        // Redraw connections if we have a temporary connection
+        if (this.tempConnection && this.connectionMode) {
+            this.redrawConnections();
+        }
+    }
+
+    drawTemporaryConnection() {
+        if (!this.tempConnection || !this.mousePosition) return;
+
+        const sourceNode = this.nodes.get(this.tempConnection.source);
+        if (!sourceNode) return;
+
+        const sourcePoint = this.getConnectionPoint(sourceNode, 'output');
+        if (!sourcePoint) return;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        
+        const dx = this.mousePosition.x - sourcePoint.x;
+        const controlOffset = Math.max(Math.abs(dx) * 0.4, 50);
+        
+        const cp1x = sourcePoint.x + controlOffset;
+        const cp1y = sourcePoint.y;
+        const cp2x = this.mousePosition.x - controlOffset;
+        const cp2y = this.mousePosition.y;
+        
+        const d = `M ${sourcePoint.x} ${sourcePoint.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${this.mousePosition.x} ${this.mousePosition.y}`;
+        
+        path.setAttribute('d', d);
+        path.setAttribute('class', 'connection-line temporary');
+        
+        this.connectionssvg.appendChild(path);
+    }
+
+    handleCanvasMouseUp(e) {
+        // Handle canvas interactions
+    }
+
+    redrawConnections() {
+        // Clear existing connections
+        this.connectionssvg.innerHTML = '';
+
+        // Set SVG size to match canvas
+        const canvasRect = this.canvas.getBoundingClientRect();
+        this.connectionssvg.setAttribute('width', canvasRect.width);
+        this.connectionssvg.setAttribute('height', canvasRect.height);
+
+        // Draw all connections
+        this.connections.forEach(conn => {
+            this.drawConnection(conn.source, conn.target);
+        });
+
+        // Draw temporary connection if in connection mode
+        if (this.tempConnection && this.mousePosition) {
+            this.drawTemporaryConnection();
+        }
+    }
+
+    drawConnection(sourceId, targetId) {
+        const sourceNode = this.nodes.get(sourceId);
+        const targetNode = this.nodes.get(targetId);
+
+        if (!sourceNode || !targetNode) return;
+
+        // Get precise connection point positions
+        const sourcePoint = this.getConnectionPoint(sourceNode, 'output');
+        const targetPoint = this.getConnectionPoint(targetNode, 'input');
+
+        if (!sourcePoint || !targetPoint) return;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        
+        // Create smooth bezier curve
+        const dx = targetPoint.x - sourcePoint.x;
+        const dy = targetPoint.y - sourcePoint.y;
+        
+        // Control point offset (40% of horizontal distance, minimum 50px)
+        const controlOffset = Math.max(Math.abs(dx) * 0.4, 50);
+        
+        const cp1x = sourcePoint.x + controlOffset;
+        const cp1y = sourcePoint.y;
+        const cp2x = targetPoint.x - controlOffset;
+        const cp2y = targetPoint.y;
+        
+        const d = `M ${sourcePoint.x} ${sourcePoint.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${targetPoint.x} ${targetPoint.y}`;
+        
+        path.setAttribute('d', d);
+        path.setAttribute('class', 'connection-line');
+        path.setAttribute('data-source', sourceId);
+        path.setAttribute('data-target', targetId);
+        
+        // Add click handler for connection deletion
+        path.style.pointerEvents = 'stroke';
+        path.style.cursor = 'pointer';
+        path.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.deleteConnection(sourceId, targetId);
+        });
+        
+        this.connectionssvg.appendChild(path);
+    }
+
+    getConnectionPoint(node, type) {
+        if (!node || !node.element) return null;
+
+        const nodeElement = node.element;
+        const connectionPoint = nodeElement.querySelector(`.node-connection-point.${type}`);
+        
+        if (!connectionPoint) return null;
+
+        // Get the actual position of the connection point relative to the canvas
+        const pointRect = connectionPoint.getBoundingClientRect();
+        const canvasRect = this.canvas.getBoundingClientRect();
+
+        // Account for canvas scroll position
+        const scrollLeft = this.canvas.scrollLeft || 0;
+        const scrollTop = this.canvas.scrollTop || 0;
+
+        return {
+            x: pointRect.left - canvasRect.left + scrollLeft + (pointRect.width / 2),
+            y: pointRect.top - canvasRect.top + scrollTop + (pointRect.height / 2)
+        };
+    }
+
+    deleteConnection(sourceId, targetId) {
+        if (confirm('Delete this connection?')) {
+            this.connections = this.connections.filter(conn => 
+                !(conn.source === sourceId && conn.target === targetId)
+            );
+            this.redrawConnections();
+            this.updateWorkflowInfo();
+            this.showNotification('Connection deleted', 'info');
+        }
+    }
+
+    clearCanvas() {
+        if (confirm('Are you sure you want to clear the entire canvas?')) {
+            // Remove all node elements
+            this.nodes.forEach(node => {
+                if (node.element && node.element.parentNode) {
+                    node.element.parentNode.removeChild(node.element);
+                }
+            });
+
+            // Clear data
+            this.nodes.clear();
+            this.connections = [];
+            this.selectedNode = null;
+            this.tempConnection = null;
+            this.currentWorkflowId = null; // Reset workflow ID
+
+            // Update UI
+            document.getElementById('no-selection').style.display = 'block';
+            document.getElementById('node-properties').style.display = 'none';
+            this.updateWorkflowInfo();
+            this.redrawConnections();
+
+            this.showNotification('Canvas cleared', 'info');
+        }
+    }
+
+    zoom(factor) {
+        this.scale *= factor;
+        this.scale = Math.max(0.25, Math.min(2, this.scale));
+        this.canvas.style.transform = `scale(${this.scale})`;
+    }
+
+    resetZoom() {
+        this.scale = 1;
+        this.canvas.style.transform = 'scale(1)';
+    }
+
+    updateWorkflowInfo() {
+        document.getElementById('node-count').textContent = this.nodes.size;
+        document.getElementById('connection-count').textContent = this.connections.length;
+    }
+
+    async showLoadModal() {
+        document.getElementById('load-workflow-modal').style.display = 'flex';
+        await this.loadWorkflowsList();
+    }
+
+    hideLoadModal() {
+        document.getElementById('load-workflow-modal').style.display = 'none';
+    }
+
+    async loadWorkflowsList() {
+        const workflowList = document.getElementById('workflow-list');
+        workflowList.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading workflows...</div>';
+
+        try {
+            const response = await fetch('/api/workflows');
+            const data = await response.json();
+            
+            if (data.workflows && data.workflows.length > 0) {
+                this.renderWorkflowsList(data.workflows);
+            } else {
+                workflowList.innerHTML = `
+                    <div class="empty-workflows">
+                        <i class="fas fa-folder-open"></i>
+                        <p>No saved workflows found</p>
+                        <small>Create and save your first workflow to see it here</small>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading workflows:', error);
+            workflowList.innerHTML = `
+                <div class="empty-workflows">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Error loading workflows</p>
+                    <small>${error.message}</small>
+                </div>
+            `;
+        }
+    }
+
+    renderWorkflowsList(workflows) {
+        const workflowList = document.getElementById('workflow-list');
+        workflowList.innerHTML = '';
+
+        workflows.forEach(workflow => {
+            const workflowItem = document.createElement('div');
+            workflowItem.className = 'workflow-item';
+            workflowItem.innerHTML = `
+                <div class="workflow-info">
+                    <div class="workflow-name">${workflow.name}</div>
+                    <div class="workflow-description">${workflow.description || 'No description'}</div>
+                    <div class="workflow-meta">
+                        <span><i class="fas fa-sitemap"></i> ${workflow.metadata?.node_count || 0} nodes</span>
+                        <span><i class="fas fa-link"></i> ${workflow.metadata?.connection_count || 0} connections</span>
+                        <span><i class="fas fa-clock"></i> ${this.formatDate(workflow.created_at)}</span>
+                    </div>
+                </div>
+                <div class="workflow-actions">
+                    <button class="workflow-action-btn load" data-action="load" data-id="${workflow.id}">
+                        <i class="fas fa-folder-open"></i> Load
+                    </button>
+                    <button class="workflow-action-btn duplicate" data-action="duplicate" data-id="${workflow.id}">
+                        <i class="fas fa-copy"></i> Duplicate
+                    </button>
+                    <button class="workflow-action-btn delete" data-action="delete" data-id="${workflow.id}">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            `;
+
+            // Add event listeners
+            const loadBtn = workflowItem.querySelector('[data-action="load"]');
+            const duplicateBtn = workflowItem.querySelector('[data-action="duplicate"]');
+            const deleteBtn = workflowItem.querySelector('[data-action="delete"]');
+
+            loadBtn.addEventListener('click', () => this.loadWorkflow(workflow.id));
+            duplicateBtn.addEventListener('click', () => this.duplicateWorkflow(workflow.id));
+            deleteBtn.addEventListener('click', () => this.deleteWorkflow(workflow.id));
+
+            workflowList.appendChild(workflowItem);
+        });
+    }
+
+    async loadWorkflow(workflowId) {
+        try {
+            const response = await fetch(`/api/workflows/${workflowId}`);
+            const workflowData = await response.json();
+
+            if (response.ok) {
+                this.importWorkflow(workflowData);
+                this.currentWorkflowId = workflowId;
+                this.hideLoadModal();
+                this.showNotification('Workflow loaded successfully!', 'success');
+            } else {
+                this.showNotification('Failed to load workflow: ' + workflowData.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error loading workflow:', error);
+            this.showNotification('Error loading workflow', 'error');
+        }
+    }
+
+    async duplicateWorkflow(workflowId) {
+        try {
+            const response = await fetch(`/api/workflows/${workflowId}/duplicate`, {
+                method: 'POST'
+            });
+            const result = await response.json();
+
+            if (response.ok) {
+                this.showNotification('Workflow duplicated successfully!', 'success');
+                await this.loadWorkflowsList(); // Refresh the list
+            } else {
+                this.showNotification('Failed to duplicate workflow: ' + result.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error duplicating workflow:', error);
+            this.showNotification('Error duplicating workflow', 'error');
+        }
+    }
+
+    async deleteWorkflow(workflowId) {
+        if (confirm('Are you sure you want to delete this workflow? This action cannot be undone.')) {
+            try {
+                const response = await fetch('/api/workflows', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id: workflowId })
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    this.showNotification('Workflow deleted successfully!', 'success');
+                    await this.loadWorkflowsList(); // Refresh the list
+                } else {
+                    this.showNotification('Failed to delete workflow: ' + result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting workflow:', error);
+                this.showNotification('Error deleting workflow', 'error');
+            }
+        }
+    }
+
+    importWorkflow(workflowData) {
+        // Clear current canvas
+        this.clearCanvas();
+
+        const workflow = workflowData.workflow;
+        const nodes = workflow.nodes || [];
+        const connections = workflow.connections || [];
+
+        // Import nodes
+        nodes.forEach(nodeData => {
+            const nodeElement = this.createNodeFromData(nodeData);
+            this.canvas.appendChild(nodeElement);
+            
+            // Store node data
+            this.nodes.set(nodeData.id, {
+                ...nodeData,
+                element: nodeElement
+            });
+        });
+
+        // Import connections
+        this.connections = connections;
+        this.redrawConnections();
+        this.updateWorkflowInfo();
+    }
+
+    createNodeFromData(nodeData) {
+        const agentInfo = this.getAgentInfo(nodeData.agentType);
+        
+        const nodeElement = document.createElement('div');
+        nodeElement.className = 'workflow-node';
+        nodeElement.dataset.nodeId = nodeData.id;
+        nodeElement.style.left = `${nodeData.position.x}px`;
+        nodeElement.style.top = `${nodeData.position.y}px`;
+        
+        nodeElement.innerHTML = `
+            <div class="node-header">
+                <i class="${agentInfo.icon}"></i>
+                <span class="node-title">${nodeData.title}</span>
+            </div>
+            <div class="node-description">${nodeData.description}</div>
+            <div class="node-type">${nodeData.agentType}</div>
+            <div class="node-connection-point input" data-type="input"></div>
+            <div class="node-connection-point output" data-type="output"></div>
+        `;
+
+        // Add event listeners
+        nodeElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.selectNode(nodeData.id);
+        });
+
+        nodeElement.addEventListener('mousedown', this.handleNodeMouseDown.bind(this));
+
+        // Connection point events
+        const connectionPoints = nodeElement.querySelectorAll('.node-connection-point');
+        connectionPoints.forEach(point => {
+            point.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.handleConnectionPointClick(nodeData.id, point.dataset.type);
+            });
+        });
+
+        return nodeElement;
+    }
+
+    formatDate(dateString) {
+        if (!dateString) return 'Unknown';
+        const date = new Date(dateString);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    showSaveModal() {
+        if (this.nodes.size === 0) {
+            this.showNotification('Please add at least one node before saving', 'warning');
+            return;
+        }
+        document.getElementById('save-workflow-modal').style.display = 'flex';
+    }
+
+    hideSaveModal() {
+        document.getElementById('save-workflow-modal').style.display = 'none';
+    }
+
+    async saveWorkflow() {
+        const name = document.getElementById('workflow-name').value;
+        const description = document.getElementById('workflow-description').value;
+
+        if (!name) {
+            this.showNotification('Please enter a workflow name', 'warning');
+            return;
+        }
+
+        const workflowData = this.exportWorkflow();
+        const isUpdate = this.currentWorkflowId !== null;
+
+        try {
+            const url = '/api/workflows';
+            const method = isUpdate ? 'PUT' : 'POST';
+            const body = {
+                name: name,
+                description: description,
+                workflow: workflowData
+            };
+
+            if (isUpdate) {
+                body.id = this.currentWorkflowId;
+            }
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(body)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                if (isUpdate) {
+                    this.showNotification('Workflow updated successfully!', 'success');
+                } else {
+                    this.showNotification('Workflow saved successfully!', 'success');
+                    this.currentWorkflowId = result.workflow_id;
+                }
+                this.hideSaveModal();
+            } else {
+                this.showNotification('Failed to save workflow: ' + result.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error saving workflow:', error);
+            this.showNotification('Error saving workflow', 'error');
+        }
+    }
+
+    showRunModal() {
+        if (this.nodes.size === 0) {
+            this.showNotification('Please add at least one node before running', 'warning');
+            return;
+        }
+
+        this.generateWorkflowPreview();
+        document.getElementById('run-workflow-modal').style.display = 'flex';
+    }
+
+    hideRunModal() {
+        document.getElementById('run-workflow-modal').style.display = 'none';
+    }
+
+    generateWorkflowPreview() {
+        const previewContent = document.getElementById('workflow-preview-content');
+        previewContent.innerHTML = '';
+
+        // Sort nodes by execution order
+        const sortedNodes = Array.from(this.nodes.values()).sort((a, b) => {
+            return (a.position.y - b.position.y) || (a.position.x - b.position.x);
+        });
+
+        sortedNodes.forEach((node, index) => {
+            const item = document.createElement('div');
+            item.className = 'workflow-preview-item';
+            
+            const agentInfo = this.getAgentInfo(node.agentType);
+            item.innerHTML = `
+                <i class="${agentInfo.icon}"></i>
+                <span>${index + 1}. ${node.title}</span>
+            `;
+            
+            previewContent.appendChild(item);
+        });
+    }
+
+    async runWorkflow() {
+        const projectDescription = document.getElementById('workflow-project-description').value;
+
+        if (!projectDescription) {
+            this.showNotification('Please enter a project description', 'warning');
+            return;
+        }
+
+        const workflowData = this.exportWorkflow();
+
+        try {
+            const response = await fetch('/api/run_custom_workflow', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    workflow: workflowData,
+                    description: projectDescription
+                })
+            });
+
+            if (response.ok) {
+                this.showNotification('Workflow started successfully!', 'success');
+                this.hideRunModal();
+                
+                // Redirect to main page to see results
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            } else {
+                const error = await response.json();
+                this.showNotification('Failed to start workflow: ' + error.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error running workflow:', error);
+            this.showNotification('Error running workflow', 'error');
+        }
+    }
+
+    exportWorkflow() {
+        const nodes = Array.from(this.nodes.values()).map(node => ({
+            id: node.id,
+            agentType: node.agentType,
+            title: node.title,
+            description: node.description,
+            customPrompt: node.customPrompt,
+            position: node.position
+        }));
+
+        return {
+            nodes: nodes,
+            connections: this.connections
+        };
+    }
+
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        `;
+
+        // Add to document
+        document.body.appendChild(notification);
+
+        // Auto remove
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 5000);
+    }
+
+    autoConnectSequential() {
+        // Auto-connect nodes in sequential order
+        const nodeArray = Array.from(this.nodes.values()).sort((a, b) => a.order - b.order);
+        
+        if (nodeArray.length < 2) {
+            this.showNotification('Need at least 2 nodes to auto-connect', 'warning');
+            return;
+        }
+        
+        // Clear existing connections
+        this.connections = [];
+        
+        // Create sequential connections
+        for (let i = 0; i < nodeArray.length - 1; i++) {
+            this.createConnection(nodeArray[i].id, nodeArray[i + 1].id);
+        }
+        
+        this.scheduleRedraw();
+        this.showNotification('Nodes auto-connected sequentially', 'success');
+    }
+
+    resetLayout() {
+        // Reset to default positions without connections
+        this.connections = [];
+        
+        const nodeArray = Array.from(this.nodes.values());
+        const startX = 50;
+        const startY = 50;
+        const spacing = 150;
+        
+        nodeArray.forEach((node, index) => {
+            const x = startX + (index % 3) * 200; // 3 columns
+            const y = startY + Math.floor(index / 3) * spacing;
+            
+            node.position.x = x;
+            node.position.y = y;
+            node.element.style.left = `${x}px`;
+            node.element.style.top = `${y}px`;
+            node.element.style.width = 'auto';
+        });
+        
+        this.scheduleRedraw();
+        this.showNotification('Layout reset to grid', 'info');
+    }
+
+    deleteNode(nodeId) {
+        const node = this.nodes.get(nodeId);
+        if (!node) return;
+
+        // Remove all connections involving this node
+        this.connections = this.connections.filter(conn => 
+            conn.source !== nodeId && conn.target !== nodeId
+        );
+
+        // Remove from DOM
+        if (node.element && node.element.parentNode) {
+            node.element.parentNode.removeChild(node.element);
+        }
+
+        // Remove from nodes map
+        this.nodes.delete(nodeId);
+
+        // Clear selection if this node was selected
+        if (this.selectedNode === nodeId) {
+            this.selectedNode = null;
+            this.updatePropertiesPanel();
+        }
+
+        // Redraw connections and update workflow info
+        this.scheduleRedraw();
+        this.updateWorkflowInfo();
+        
+        // Rearrange remaining nodes if in sequential mode
+        if (this.nodes.size > 0) {
+            setTimeout(() => this.arrangeNodesSequentially(), 100);
+        }
+    }
+
+    // Override the original handleDrop to use sequential insertion
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    new WorkflowBuilder();
+});
+
+// Add notification styles
+const notificationStyles = document.createElement('style');
+notificationStyles.textContent = `
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 3000;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        animation: slideIn 0.3s ease-out;
+        max-width: 300px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .notification-success {
+        background: #2ed573;
+    }
+
+    .notification-error {
+        background: #ff4757;
+    }
+
+    .notification-warning {
+        background: #ffa502;
+    }
+
+    .notification-info {
+        background: #0099cc;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+`;
+
+document.head.appendChild(notificationStyles);

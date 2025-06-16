@@ -1,0 +1,98 @@
+{
+  "id": "market_research_analysis",
+  "name": "Market Research & Competitive Analysis",
+  "description": "Comprehensive workflow for conducting market research and competitive analysis for new products or services",
+  "workflow": {
+    "nodes": [
+      {
+        "id": "node_1",
+        "title": "Market Research",
+        "agentType": "researcher",
+        "description": "Research the target market, identify key trends, customer demographics, and market size. Focus on current market conditions and growth opportunities.",
+        "position": {
+          "x": 100,
+          "y": 100
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_2",
+        "title": "Competitor Analysis",
+        "agentType": "researcher",
+        "description": "Identify main competitors, analyze their products, pricing strategies, marketing approaches, and market positioning. Gather data on their strengths and weaknesses.",
+        "position": {
+          "x": 400,
+          "y": 100
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_3",
+        "title": "Data Analysis & Insights",
+        "agentType": "analyst",
+        "description": "Analyze the market research and competitor data to identify patterns, opportunities, and threats. Provide strategic insights and recommendations.",
+        "position": {
+          "x": 250,
+          "y": 300
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_4",
+        "title": "Strategic Report",
+        "agentType": "writer",
+        "description": "Create a comprehensive market analysis report with executive summary, key findings, competitive landscape overview, and strategic recommendations.",
+        "position": {
+          "x": 250,
+          "y": 500
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_5",
+        "title": "Final Review & Validation",
+        "agentType": "reviewer",
+        "description": "Review the market analysis report for accuracy, completeness, and strategic value. Validate recommendations and ensure all data sources are properly cited.",
+        "position": {
+          "x": 250,
+          "y": 700
+        },
+        "model": null,
+        "customPrompt": ""
+      }
+    ],
+    "connections": [
+      {
+        "id": "conn_1",
+        "source": "node_1",
+        "target": "node_3"
+      },
+      {
+        "id": "conn_2",
+        "source": "node_2",
+        "target": "node_3"
+      },
+      {
+        "id": "conn_3",
+        "source": "node_3",
+        "target": "node_4"
+      },
+      {
+        "id": "conn_4",
+        "source": "node_4",
+        "target": "node_5"
+      }
+    ]
+  },
+  "metadata": {
+    "node_count": 5,
+    "connection_count": 4,
+    "agent_types": ["researcher", "analyst", "writer", "reviewer"]
+  },
+  "created_at": "2025-06-16T10:00:00.000Z",
+  "updated_at": "2025-06-16T10:00:00.000Z"
+}

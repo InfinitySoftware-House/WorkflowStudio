@@ -1,0 +1,36 @@
+{
+  "ollama": {
+    "base_url": "http://localhost:11434",
+    "model": "qwen3:latest",
+    "temperature": 0.7,
+    "top_p": 0.9,
+    "max_tokens": 1000
+  },
+  "agents": {
+    "manager": {
+      "enabled": true,
+      "max_memory": 100
+    },
+    "researcher": {
+      "enabled": true,
+      "max_memory": 100
+    },
+    "analyst": {
+      "enabled": true,
+      "max_memory": 100
+    },
+    "writer": {
+      "enabled": true,
+      "max_memory": 100
+    },
+    "reviewer": {
+      "enabled": true,
+      "max_memory": 100
+    }
+  },
+  "collaboration": {
+    "max_discussion_rounds": 3,
+    "enable_cross_communication": true,
+    "log_all_interactions": true
+  }
+}

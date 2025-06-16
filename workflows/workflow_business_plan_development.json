@@ -1,0 +1,227 @@
+{
+  "id": "business_plan_development",
+  "name": "Comprehensive Business Plan Development",
+  "description": "Full workflow for creating a detailed business plan including market analysis, financial projections, and strategic planning",
+  "workflow": {
+    "nodes": [
+      {
+        "id": "node_1",
+        "title": "Business Concept & Vision",
+        "agentType": "manager",
+        "description": "Define the business concept, mission, vision, and core values. Establish the foundation and direction for the business plan.",
+        "position": {
+          "x": 250,
+          "y": 50
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_2",
+        "title": "Market Research & Analysis",
+        "agentType": "researcher",
+        "description": "Conduct comprehensive market research including industry analysis, target market identification, and market size estimation.",
+        "position": {
+          "x": 100,
+          "y": 200
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_3",
+        "title": "Competitive Analysis",
+        "agentType": "researcher",
+        "description": "Analyze direct and indirect competitors, their business models, pricing strategies, and market positioning to identify opportunities.",
+        "position": {
+          "x": 400,
+          "y": 200
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_4",
+        "title": "SWOT Analysis",
+        "agentType": "analyst",
+        "description": "Perform detailed SWOT analysis identifying strengths, weaknesses, opportunities, and threats for the business.",
+        "position": {
+          "x": 250,
+          "y": 350
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_5",
+        "title": "Financial Projections",
+        "agentType": "custom",
+        "description": "Create detailed financial projections including revenue forecasts, expense budgets, cash flow analysis, and break-even calculations.",
+        "position": {
+          "x": 100,
+          "y": 500
+        },
+        "model": null,
+        "customPrompt": "You are a financial analyst and business consultant specializing in startup financial modeling. Create realistic, data-driven financial projections with clear assumptions and scenarios. Focus on practical financial planning and risk assessment."
+      },
+      {
+        "id": "node_6",
+        "title": "Marketing & Sales Strategy",
+        "agentType": "custom",
+        "description": "Develop comprehensive marketing and sales strategies including customer acquisition, pricing strategy, and distribution channels.",
+        "position": {
+          "x": 400,
+          "y": 500
+        },
+        "model": null,
+        "customPrompt": "You are a marketing strategist with expertise in go-to-market strategies for startups and growing businesses. Focus on practical, scalable marketing approaches with clear customer acquisition strategies and measurable outcomes."
+      },
+      {
+        "id": "node_7",
+        "title": "Operations Plan",
+        "agentType": "manager",
+        "description": "Define operational processes, organizational structure, staffing requirements, and key operational milestones.",
+        "position": {
+          "x": 250,
+          "y": 650
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_8",
+        "title": "Risk Assessment",
+        "agentType": "analyst",
+        "description": "Identify potential business risks, assess their impact and probability, and develop mitigation strategies.",
+        "position": {
+          "x": 100,
+          "y": 800
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_9",
+        "title": "Executive Summary",
+        "agentType": "writer",
+        "description": "Create a compelling executive summary that captures the key elements of the business plan in a concise, engaging format.",
+        "position": {
+          "x": 400,
+          "y": 800
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_10",
+        "title": "Final Business Plan Document",
+        "agentType": "writer",
+        "description": "Compile all sections into a comprehensive, professional business plan document with proper formatting and structure.",
+        "position": {
+          "x": 250,
+          "y": 950
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_11",
+        "title": "Business Plan Review & Validation",
+        "agentType": "reviewer",
+        "description": "Conduct final review of the business plan for completeness, accuracy, and persuasiveness. Validate all assumptions and projections.",
+        "position": {
+          "x": 250,
+          "y": 1100
+        },
+        "model": null,
+        "customPrompt": ""
+      }
+    ],
+    "connections": [
+      {
+        "id": "conn_1",
+        "source": "node_1",
+        "target": "node_2"
+      },
+      {
+        "id": "conn_2",
+        "source": "node_1",
+        "target": "node_3"
+      },
+      {
+        "id": "conn_3",
+        "source": "node_2",
+        "target": "node_4"
+      },
+      {
+        "id": "conn_4",
+        "source": "node_3",
+        "target": "node_4"
+      },
+      {
+        "id": "conn_5",
+        "source": "node_4",
+        "target": "node_5"
+      },
+      {
+        "id": "conn_6",
+        "source": "node_4",
+        "target": "node_6"
+      },
+      {
+        "id": "conn_7",
+        "source": "node_4",
+        "target": "node_7"
+      },
+      {
+        "id": "conn_8",
+        "source": "node_5",
+        "target": "node_8"
+      },
+      {
+        "id": "conn_9",
+        "source": "node_6",
+        "target": "node_9"
+      },
+      {
+        "id": "conn_10",
+        "source": "node_7",
+        "target": "node_8"
+      },
+      {
+        "id": "conn_11",
+        "source": "node_7",
+        "target": "node_9"
+      },
+      {
+        "id": "conn_12",
+        "source": "node_8",
+        "target": "node_10"
+      },
+      {
+        "id": "conn_13",
+        "source": "node_9",
+        "target": "node_10"
+      },
+      {
+        "id": "conn_14",
+        "source": "node_10",
+        "target": "node_11"
+      }
+    ]
+  },
+  "metadata": {
+    "node_count": 11,
+    "connection_count": 14,
+    "agent_types": [
+      "manager",
+      "researcher",
+      "analyst",
+      "custom",
+      "writer",
+      "reviewer"
+    ]
+  },
+  "created_at": "2025-06-16T10:45:00.000Z",
+  "updated_at": "2025-06-16T10:45:00.000Z"
+}

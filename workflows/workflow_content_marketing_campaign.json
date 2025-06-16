@@ -1,0 +1,164 @@
+{
+  "id": "content_marketing_campaign",
+  "name": "Content Marketing Campaign Creation",
+  "description": "End-to-end workflow for planning, creating, and optimizing a comprehensive content marketing campaign",
+  "workflow": {
+    "nodes": [
+      {
+        "id": "node_1",
+        "title": "Campaign Planning",
+        "agentType": "manager",
+        "description": "Define campaign objectives, target audience, key messages, and success metrics. Create a detailed campaign strategy and timeline.",
+        "position": {
+          "x": 250,
+          "y": 50
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_2",
+        "title": "Audience Research",
+        "agentType": "researcher",
+        "description": "Research target audience demographics, interests, pain points, and content consumption habits. Identify the best channels and content formats.",
+        "position": {
+          "x": 100,
+          "y": 200
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_3",
+        "title": "Competitor Content Analysis",
+        "agentType": "researcher",
+        "description": "Analyze competitors' content strategies, identify content gaps, and discover opportunities for differentiation and improvement.",
+        "position": {
+          "x": 400,
+          "y": 200
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_4",
+        "title": "Content Strategy Development",
+        "agentType": "analyst",
+        "description": "Develop a comprehensive content strategy based on research findings. Define content pillars, themes, and distribution channels.",
+        "position": {
+          "x": 250,
+          "y": 350
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_5",
+        "title": "Blog Content Creation",
+        "agentType": "writer",
+        "description": "Create engaging blog posts, articles, and long-form content based on the content strategy. Focus on SEO optimization and audience engagement.",
+        "position": {
+          "x": 100,
+          "y": 500
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_6",
+        "title": "Social Media Content",
+        "agentType": "writer",
+        "description": "Create social media posts, captions, and short-form content for various platforms. Adapt tone and format for each social channel.",
+        "position": {
+          "x": 400,
+          "y": 500
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_7",
+        "title": "Email Marketing Content",
+        "agentType": "writer",
+        "description": "Create email newsletter content, promotional emails, and nurture sequences that align with the overall campaign strategy.",
+        "position": {
+          "x": 250,
+          "y": 650
+        },
+        "model": null,
+        "customPrompt": ""
+      },
+      {
+        "id": "node_8",
+        "title": "Content Quality Review",
+        "agentType": "reviewer",
+        "description": "Review all created content for quality, brand consistency, message alignment, and effectiveness. Provide feedback and improvement suggestions.",
+        "position": {
+          "x": 250,
+          "y": 800
+        },
+        "model": null,
+        "customPrompt": ""
+      }
+    ],
+    "connections": [
+      {
+        "id": "conn_1",
+        "source": "node_1",
+        "target": "node_2"
+      },
+      {
+        "id": "conn_2",
+        "source": "node_1",
+        "target": "node_3"
+      },
+      {
+        "id": "conn_3",
+        "source": "node_2",
+        "target": "node_4"
+      },
+      {
+        "id": "conn_4",
+        "source": "node_3",
+        "target": "node_4"
+      },
+      {
+        "id": "conn_5",
+        "source": "node_4",
+        "target": "node_5"
+      },
+      {
+        "id": "conn_6",
+        "source": "node_4",
+        "target": "node_6"
+      },
+      {
+        "id": "conn_7",
+        "source": "node_4",
+        "target": "node_7"
+      },
+      {
+        "id": "conn_8",
+        "source": "node_5",
+        "target": "node_8"
+      },
+      {
+        "id": "conn_9",
+        "source": "node_6",
+        "target": "node_8"
+      },
+      {
+        "id": "conn_10",
+        "source": "node_7",
+        "target": "node_8"
+      }
+    ]
+  },
+  "metadata": {
+    "node_count": 8,
+    "connection_count": 10,
+    "agent_types": ["manager", "researcher", "analyst", "writer", "reviewer"]
+  },
+  "created_at": "2025-06-16T10:15:00.000Z",
+  "updated_at": "2025-06-16T10:15:00.000Z"
+}
